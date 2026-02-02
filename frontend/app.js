@@ -21,7 +21,7 @@ userInput.addEventListener('keypress', (e) => {
     }
 });
 
-// Send query to backend
+// Send query to backend using SSE streaming
 async function sendQuery() {
     const question = userInput.value.trim();
     
@@ -37,9 +37,96 @@ async function sendQuery() {
     userInput.value = '';
     
     // Show loading
-    showLoading('Analyzing your question...');
+    showLoading('Connecting to server...');
     hideResults();
     disableInput(true);
+    
+    try {
+        // Use EventSource for SSE streaming
+        const eventSource = new EventSource(
+            `${API_BASE_URL}/query/stream?` + new URLSearchParams({
+                question: question
+            }).toString()
+        );
+        
+        // But EventSource doesn't support POST, so we'll use fetch with streaming
+        const response = await fetch(`${API_BASE_URL}/query/stream`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'text/event-stream',
+            },
+            body: JSON.stringify({ question })
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to connect to streaming endpoint');
+        }
+        
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let accumulatedSQL = '';
+        
+        while (true) {
+            const { done, value } = await reader.read();
+            
+            if (done) break;
+            
+            const chunk = decoder.decode(value);
+            const lines = chunk.split('\n');
+            
+            for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                    const data = JSON.parse(line.substring(6));
+                    await handleStreamEvent(data, accumulatedSQL);
+                } else if (line.startsWith('event: ')) {
+                    const eventType = line.substring(7);
+                    // Handle different event types
+                    console.log('Event:', eventType);
+                }
+            }
+        }
+        
+    } catch (error) {
+        console.error('Streaming error:', error);
+        // Fallback to non-streaming endpoint
+        await sendQueryFallback(question);
+    } finally {
+        hideLoading();
+        disableInput(false);
+        updateCacheStats();
+    }
+}
+
+// Handle streaming events
+async function handleStreamEvent(data, accumulatedSQL) {
+    if (data.event === 'progress') {
+        updateLoadingMessage(data.data.message);
+    } else if (data.event === 'sql_token') {
+        // Show SQL as it's being generated
+        const eventData = typeof data.data === 'string' ? JSON.parse(data.data) : data.data;
+        accumulatedSQL = eventData.accumulated;
+        if (sqlCode) {
+            sqlCode.textContent = accumulatedSQL;
+            resultsContainer.style.display = 'block';
+        }
+    } else if (data.event === 'sql_complete') {
+        const eventData = typeof data.data === 'string' ? JSON.parse(data.data) : data.data;
+        updateLoadingMessage('SQL generated! Executing...');
+    } else if (data.event === 'complete') {
+        const eventData = typeof data.data === 'string' ? JSON.parse(data.data) : data.data;
+        displayResults(eventData);
+        addMessage(`✅ Query executed! Found ${eventData.results.row_count} rows in ${eventData.execution_time.toFixed(2)}s`, 'assistant-message');
+    } else if (data.event === 'error') {
+        const eventData = typeof data.data === 'string' ? JSON.parse(data.data) : data.data;
+        addMessage(`❌ Error: ${eventData.message}`, 'error-message');
+        hideResults();
+    }
+}
+
+// Fallback to non-streaming endpoint
+async function sendQueryFallback(question) {
+    showLoading('Analyzing your question...');
     
     try {
         // Update loading message
@@ -73,10 +160,6 @@ async function sendQuery() {
         console.error('Error:', error);
         addMessage(`❌ Error: ${error.message}`, 'error-message');
         hideResults();
-    } finally {
-        hideLoading();
-        disableInput(false);
-        updateCacheStats();
     }
 }
 
@@ -209,7 +292,7 @@ async function updateCacheStats() {
     try {
         const response = await fetch(`${API_BASE_URL}/cache/stats`);
         const data = await response.json();
-        cacheSize.textContent = data.cache_size;
+        cacheSize.textContent = `${data.size}/${data.max_size} (${data.hit_rate} hit rate)`;
     } catch (error) {
         console.error('Error fetching cache stats:', error);
     }
