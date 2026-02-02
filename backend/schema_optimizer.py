@@ -39,16 +39,35 @@ class SchemaOptimizer:
                         relevant_tables.append(table)
                         break
         
+        # Always include enrollments if both students and courses are mentioned
+        if "students" in relevant_tables and "courses" in relevant_tables:
+            if "enrollments" not in relevant_tables:
+                relevant_tables.append("enrollments")
+        
         # If no tables found, return all tables
         if not relevant_tables:
             relevant_tables = list(self.full_schema.keys())
         
-        # Build schema string for selected tables
+        # Build schema string for selected tables with relationships
         schema_text = "Database Schema:\n\n"
         for table in relevant_tables:
             if table in self.full_schema:
                 schema_text += f"Table: {table}\n"
                 schema_text += f"Columns: {', '.join(self.full_schema[table])}\n\n"
+        
+        # Add relationship hints
+        schema_text += "\nTable Relationships:\n"
+        schema_text += "- students.department_id -> departments.id\n"
+        schema_text += "- students.hostel_id -> hostels.id\n"
+        schema_text += "- courses.department_id -> departments.id\n"
+        schema_text += "- enrollments.student_id -> students.id\n"
+        schema_text += "- enrollments.course_id -> courses.id\n"
+        schema_text += "- attendance.student_id -> students.id\n"
+        schema_text += "- attendance.course_id -> courses.id\n"
+        schema_text += "- grades.student_id -> students.id\n"
+        schema_text += "- grades.course_id -> courses.id\n"
+        schema_text += "- placements.student_id -> students.id\n"
+        schema_text += "\nIMPORTANT: To join students with courses, use the enrollments table!\n"
         
         return schema_text
 

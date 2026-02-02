@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from contextlib import asynccontextmanager
 import time
 
 from database import db
@@ -9,32 +10,10 @@ from schema_optimizer import optimizer
 from sql_validator import validator
 from ollama_client import ollama_client
 
-# Initialize FastAPI app
-app = FastAPI(title="Smart University Admin API")
-
-# Enable CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# Request model
-class QueryRequest(BaseModel):
-    question: str
-
-# Response model
-class QueryResponse(BaseModel):
-    sql: str
-    results: dict
-    cached: bool
-    execution_time: float
-
-@app.on_event("startup")
-async def startup_event():
-    """Initialize connections on startup"""
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Lifespan event handler for startup and shutdown"""
+    # Startup
     print("🚀 Starting Smart University Admin API...")
     
     # Test database connection
@@ -56,6 +35,34 @@ async def startup_event():
     print("✅ Database schema loaded")
     
     print("✅ API ready at http://localhost:8000")
+    
+    yield
+    
+    # Shutdown
+    print("👋 Shutting down Smart University Admin API...")
+
+# Initialize FastAPI app with lifespan
+app = FastAPI(title="Smart University Admin API", lifespan=lifespan)
+
+# Enable CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Request model
+class QueryRequest(BaseModel):
+    question: str
+
+# Response model
+class QueryResponse(BaseModel):
+    sql: str
+    results: dict
+    cached: bool
+    execution_time: float
 
 @app.post("/api/query", response_model=QueryResponse)
 async def query_database(request: QueryRequest):
