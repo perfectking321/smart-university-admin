@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart University Administrator</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <h1>🎓 Smart University Administrator</h1>
+            <p>Ask questions about students, departments, attendance, and more in plain English</p>
+        </header>
+
+        <!-- Main Content -->
+        <main>
+            <!-- Chat Input -->
+            <div class="chat-container">
+                <div id="chat-messages" class="chat-messages">
+                    <div class="message system-message">
+                        👋 Welcome! Ask me anything about the university database.
+                        <br><br>
+                        <strong>Example questions:</strong>
+                        <ul>
+                            <li>Show all students in Computer Science department</li>
+                            <li>What is the average GPA by department?</li>
+                            <li>List students with attendance below 75%</li>
+                            <li>Show placement statistics for each department</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="input-container">
+                    <input 
+                        type="text" 
+                        id="user-input" 
+                        placeholder="Ask a question about the database..."
+                        autocomplete="off"
+                    >
+                    <button id="send-btn" onclick="sendQuery()">Send</button>
+                    <button id="clear-btn" onclick="clearChat()">Clear</button>
+                </div>
+            </div>
+
+            <!-- Results Display -->
+            <div id="results-container" class="results-container" style="display: none;">
+                <!-- SQL Query Display -->
+                <div class="sql-display">
+                    <h3>Generated SQL Query:</h3>
+                    <pre id="sql-code"></pre>
+                    <button onclick="copySQL()">Copy SQL</button>
+                </div>
+
+                <!-- Data Table -->
+                <div class="table-container">
+                    <div class="table-header">
+                        <h3>Query Results</h3>
+                        <span id="row-count"></span>
+                    </div>
+                    <div class="table-scroll">
+                        <table id="results-table"></table>
+                    </div>
+                </div>
+
+                <!-- Execution Stats -->
+                <div class="stats">
+                    <span id="execution-time"></span>
+                    <span id="cache-status"></span>
+                </div>
+            </div>
+
+            <!-- Loading Indicator -->
+            <div id="loading" class="loading" style="display: none;">
+                <div class="spinner"></div>
+                <p id="loading-message">Processing your question...</p>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer>
+            <div class="cache-info">
+                Cache Size: <span id="cache-size">0</span> queries
+                <button onclick="clearCache()">Clear Cache</button>
+            </div>
+        </footer>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
