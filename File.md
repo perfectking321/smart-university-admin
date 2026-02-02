@@ -10,7 +10,7 @@
 6. [Running the Application](#running-the-application)
 7. [Usage Guide](#usage-guide)
 8. [Troubleshooting](#troubleshooting)
-
+s
 ---
 
 ## 🖥️ System Requirements
