@@ -3,6 +3,7 @@ from database import db
 class SchemaOptimizer:
     def __init__(self):
         self.full_schema = None
+        self.schema_cache = None  # Cache loaded schema
         self.table_keywords = {
             "students": ["student", "name", "gpa", "grade", "enrollment"],
             "departments": ["department", "dept", "hod", "faculty"],
@@ -14,7 +15,12 @@ class SchemaOptimizer:
         }
     
     def load_schema(self):
-        """Load complete database schema"""
+        """Load complete database schema once and cache it"""
+        if self.schema_cache is not None:
+            # Return cached schema if available
+            self.full_schema = self.schema_cache
+            return
+            
         if not self.full_schema:
             schema_data = db.get_schema()
             self.full_schema = {}
@@ -23,6 +29,10 @@ class SchemaOptimizer:
                 table_name = row["table_name"]
                 columns = row["columns"]
                 self.full_schema[table_name] = columns
+            
+            # Cache the loaded schema
+            self.schema_cache = self.full_schema.copy()
+            print("✅ Schema loaded and cached in memory")
     
     def get_relevant_tables(self, question):
         """Detect relevant tables from user question"""

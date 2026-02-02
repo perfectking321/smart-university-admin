@@ -10,19 +10,12 @@ class OllamaClient:
     def generate_sql(self, user_question, schema_text):
         """Generate SQL from natural language question"""
         
-        # Build prompt
+        # Build concise prompt (shorter = faster inference)
         prompt = f"""{schema_text}
 
-Instructions:
-- Generate ONLY the SQL query, no explanations
-- Use proper PostgreSQL syntax
-- Include appropriate JOINs, WHERE clauses, and aggregations
-- Return ONLY valid SELECT statements
-- Do not include markdown code blocks or formatting
+Question: {user_question}
 
-User Question: {user_question}
-
-SQL Query:"""
+Generate PostgreSQL SELECT query. Output ONLY SQL, no explanation."""
         
         try:
             # Call Ollama API
@@ -32,9 +25,11 @@ SQL Query:"""
                     "model": self.model,
                     "prompt": prompt,
                     "stream": False,
+                    "keep_alive": config.KEEP_ALIVE,  # Keep model loaded in memory
                     "options": {
                         "temperature": 0.1,  # Low temperature for deterministic output
-                        "top_p": 0.9
+                        "top_p": 0.9,
+                        "num_predict": 512  # Limit output tokens for SQL
                     }
                 },
                 timeout=config.QUERY_TIMEOUT

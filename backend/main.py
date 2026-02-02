@@ -7,6 +7,8 @@ import time
 from database import db
 from cache import cache
 from schema_optimizer import optimizer
+from semantic_cache import semantic_cache
+from vector_schema import vector_optimizer
 from sql_validator import validator
 from ollama_client import ollama_client
 
@@ -75,14 +77,14 @@ async def query_database(request: QueryRequest):
         if not question:
             raise HTTPException(status_code=400, detail="Question cannot be empty")
         
-        # Check cache
-        cached_result = cache.get(question)
+        # Check semantic cache first
+        cached_result = semantic_cache.get(question)
         if cached_result:
             cached_result["execution_time"] = time.time() - start_time
             return cached_result
         
-        # Get relevant tables
-        schema_text = optimizer.get_relevant_tables(question)
+        # Get relevant tables using vector-based schema linking
+        schema_text = vector_optimizer.get_relevant_tables(question)
         
         # Generate SQL using Ollama
         sql = ollama_client.generate_sql(question, schema_text)
@@ -103,8 +105,8 @@ async def query_database(request: QueryRequest):
             "execution_time": time.time() - start_time
         }
         
-        # Cache the result
-        cache.set(question, sql, results)
+        # Cache the result with semantic similarity
+        semantic_cache.set(question, sql, results)
         
         return response
         
@@ -115,14 +117,15 @@ async def query_database(request: QueryRequest):
 async def cache_stats():
     """Get cache statistics"""
     return {
-        "cache_size": cache.size(),
-        "max_size": cache.max_size
+        "cache_size": semantic_cache.size(),
+        "max_size": semantic_cache.max_size,
+        "cache_type": "semantic"
     }
 
 @app.delete("/api/cache/clear")
 async def clear_cache():
     """Clear all cached queries"""
-    cache.clear()
+    semantic_cache.clear()
     return {"message": "Cache cleared successfully"}
 
 @app.get("/api/health")
@@ -130,7 +133,7 @@ async def health_check():
     """Health check endpoint"""
     return {
         "status": "healthy",
-        "database": "connected" if db.connection else "disconnected",
+        "database": "connected" if db.connection_pool else "disconnected",
         "ollama": "connected" if ollama_client.test_connection() else "disconnected"
     }
 

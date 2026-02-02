@@ -5,3 +5,6 @@ python-dotenv
 requests
 pandas
 Faker
+sentence-transformers
+faiss-cpu
+numpy

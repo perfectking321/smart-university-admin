@@ -1,30 +1,44 @@
 import psycopg2
 from psycopg2.extras import RealDictCursor
+from psycopg2 import pool
 from config import config
 
 class Database:
     def __init__(self):
-        self.connection = None
+        self.connection_pool = None
     
     def connect(self):
-        """Establish database connection"""
+        """Establish database connection pool"""
         try:
-            self.connection = psycopg2.connect(
+            self.connection_pool = pool.SimpleConnectionPool(
+                1,  # minimum connections
+                10,  # maximum connections
                 config.DATABASE_URL,
                 cursor_factory=RealDictCursor
             )
-            print("✅ Database connected successfully")
+            print("✅ Database connection pool created successfully")
         except Exception as e:
-            print(f"❌ Database connection failed: {e}")
+            print(f"❌ Database connection pool creation failed: {e}")
             raise
     
     def execute_query(self, sql):
-        """Execute SQL query and return results"""
-        if not self.connection:
+        """Execute SQL query and return results using connection pool"""
+        if not self.connection_pool:
             self.connect()
         
+        # Auto-add LIMIT if not present (prevents massive result sets)
+        # Skip if query has GROUP BY, LIMIT, or aggregation functions
+        sql_upper = sql.upper().strip()
+        if (sql_upper.startswith('SELECT') and 
+            'LIMIT' not in sql_upper and 
+            'GROUP BY' not in sql_upper):
+            sql = f"{sql} LIMIT 1000"
+        
+        connection = None
+        cursor = None
         try:
-            cursor = self.connection.cursor()
+            connection = self.connection_pool.getconn()
+            cursor = connection.cursor()
             cursor.execute(sql)
             
             # Check if query returns data
@@ -37,15 +51,19 @@ class Database:
                     "row_count": len(results)
                 }
             else:
-                self.connection.commit()
+                connection.commit()
                 return {"message": "Query executed successfully"}
                 
         except Exception as e:
-            self.connection.rollback()
+            if connection:
+                connection.rollback()
             print(f"❌ Query execution failed: {e}")
             raise
         finally:
-            cursor.close()
+            if cursor:
+                cursor.close()
+            if connection:
+                self.connection_pool.putconn(connection)
     
     def get_schema(self):
         """Get database schema for all tables"""
@@ -63,10 +81,10 @@ class Database:
         return self.execute_query(query)
     
     def close(self):
-        """Close database connection"""
-        if self.connection:
-            self.connection.close()
-            print("Database connection closed")
+        """Close database connection pool"""
+        if self.connection_pool:
+            self.connection_pool.closeall()
+            print("Database connection pool closed")
 
 # Global database instance
 db = Database()
