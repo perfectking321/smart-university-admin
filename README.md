@@ -61,7 +61,7 @@ Edit `backend/.env`:
 DATABASE_URL=postgresql://postgres:postgres123@localhost:5432/university_db
 OLLAMA_HOST=http://localhost:11434
 OLLAMA_MODEL=sqlcoder:15b
-```
+```s
 
 ## 🎯 Running the Application
 
