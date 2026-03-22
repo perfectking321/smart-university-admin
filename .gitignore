@@ -3,4 +3,5 @@ venv/
 chroma_db/
 repomix-output.xml
 __pycache__/
-.agents/
+.agents
+.vscode
