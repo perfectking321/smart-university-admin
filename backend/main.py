@@ -154,8 +154,8 @@ async def reload_schema() -> dict:
 
 
 # Optional: Serve React frontend in production
-# If frontend-v2/dist exists, mount it at root
-frontend_dist = Path(__file__).parent.parent / "frontend-v2" / "dist"
+# If frontend/dist exists, mount it at root
+frontend_dist = Path(__file__).parent.parent / "frontend" / "dist"
 if frontend_dist.exists() and frontend_dist.is_dir():
     app.mount("/", StaticFiles(directory=str(frontend_dist), html=True), name="frontend")
     print(f"✅ Serving React frontend from {frontend_dist}")

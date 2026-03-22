@@ -16,7 +16,7 @@ A full‑stack **Smart University Admin** system that lets you ask questions abo
 - **Safe querying only**: validator restricts to `SELECT` and blocks dangerous keywords/patterns
 - **Schema-aware prompting** (loads DB schema and selects relevant tables)
 - **FastAPI backend** with clean API endpoints
-- **Simple frontend** (HTML/CSS/JS) to chat, view SQL, and render results table
+- **Modern React frontend** with TypeScript, Vite, and Tailwind CSS to chat, view SQL, and render results table
 - **Query caching** (LRU-style) for repeated questions
 - **Fake data generator** for quick demos
 
@@ -37,14 +37,18 @@ A full‑stack **Smart University Admin** system that lets you ask questions abo
 - Model: `sqlcoder` (example: `sqlcoder:15b`)
 
 **Frontend**
-- Vanilla HTML/CSS/JavaScript (no framework)
+- React 19 + TypeScript
+- Vite (build tool)
+- Tailwind CSS
+- Spline 3D integration
+- Motion (animations)
 
 ---
 
 ## Repository Structure
 
 - `backend/` — FastAPI app + DB access + schema optimizer + SQL validation + Ollama client  
-- `frontend/` — UI (`index.html`, `style.css`, `app.js`)  
+- `frontend/` — Modern React frontend with TypeScript, Vite, and Tailwind CSS  
 - `database/` — SQL schema + fake data generator  
 - `ollama/` — prompt/system instructions for SQL generation  
 - `File.md` — full implementation/guide (source document)
@@ -54,6 +58,7 @@ A full‑stack **Smart University Admin** system that lets you ask questions abo
 ## Prerequisites
 
 - **Python** 3.10+
+- **Node.js** 18+ and npm
 - **PostgreSQL** 14+
 - **Ollama** installed and running
 - (Recommended) Enough RAM/VRAM for the chosen SQLCoder model
@@ -121,15 +126,20 @@ Backend should be available at:
 Health check:
 - `http://localhost:8000/api/health`
 
-### 7) Open the frontend
-Open `frontend/index.html` directly in your browser **or** run a small server:
-
-```bash
-cd frontend
-python -m http.server 3000
+### 7) Set up and run the frontend
+Create `frontend/.env.local`:
+```env
+VITE_API_BASE_URL=http://localhost:8000/api
 ```
 
-Then open:
+Install dependencies and start the development server:
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+The frontend will be available at:
 - `http://localhost:3000`
 
 ---
